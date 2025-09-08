@@ -1,8 +1,8 @@
-# Your startup name here
+# A New Perspective on Health
 
 [My Notes](notes.md)
 
-A brief description of the application here. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+This website functions as a tracker for health points and other counters used in board games or card games. It will be accessible by anyone playing from their devices so no one has to sacrifice their phone to track life totals.
 
 
 > [!NOTE]
