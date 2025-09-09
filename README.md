@@ -26,15 +26,14 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 
 ### Elevator pitch
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+If you like to play table top games with friends you have probably used an app to track points or life totals. While it can be convenient to track the numbers online there is always someone sacrificing their device so everyone can see tally. Our website aims to resolve this struggle by hosting live updates to your point tracking. While playing the game anyone present can check in on their device to see the health points, energy counters, or resources available. Now no one needs to give up their phone priviliges to enjoy an easy and efficient board game!
 
 ### Design
 
 ![Design image](Webdesign.png)
 
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
+There are a lot of moving pieces to create a tracker for multiple games. Our simple design is made to track the needed counters for up to 6 players. Expansions are on the way for more games and more styles.
 ```mermaid
 sequenceDiagram
     actor You
