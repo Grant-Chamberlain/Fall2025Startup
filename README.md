@@ -43,20 +43,20 @@ sequenceDiagram
 
 ### Key features
 
-- Describe your key feature
-- Describe your key feature
-- Describe your key feature
+- Easy Interface to quickly adjust life counts and other tallies in real time
+- Live update to all devices so no one has to give up their phone to display the values
+- History of games to remember who won and how often 
 
 ### Technologies
 
 I am going to use the required technologies in the following ways.
 
-- **HTML** - Description here
-- **CSS** - Description here
-- **React** - Description here
-- **Service** - Description here
-- **DB/Login** - Description here
-- **WebSocket** - Description here
+- **HTML** - I will use html to display multiple number trackers that are easy to change and quick to refresh
+- **CSS** - I will use CSS to make the displays of each player very easy to see and fun to customize
+- **React** - I will use react to make it easy to adjust counters and change values 
+- **Service** - The service of this website will be to track life totals and other resources for table top games
+- **DB/Login** - DB/Logio will be used to save data for each game the host has played and who has won each game. 
+- **WebSocket** - Websocket will be used to update each individual device that is connecting to the current game.
 
 ## 🚀 AWS deliverable
 
