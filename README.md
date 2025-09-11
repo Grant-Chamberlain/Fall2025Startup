@@ -29,12 +29,7 @@ If you like to play table top games with friends you have probably used an app t
 
 
 There are a lot of moving pieces to create a tracker for multiple games. Our simple design is made to track the needed counters for up to 6 players. Expansions are on the way for more games and more styles.
-```mermaid
-sequenceDiagram
-    actor You
-    actor Website
-    You->>Website: Replace this with your design
-```
+
 
 ### Key features
 
