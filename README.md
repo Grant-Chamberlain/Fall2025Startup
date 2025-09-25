@@ -52,21 +52,21 @@ I am going to use the required technologies in the following ways.
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **Server deployed and accessible with custom domain name** - [My server link](https://yourdomainnamehere.click).
+- [x] **Server deployed and accessible with custom domain name** - [My server link](https://tabletoptracker.click).
 
 ## 🚀 HTML deliverable
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **HTML pages** - I did not complete this part of the deliverable.
-- [ ] **Proper HTML element usage** - I did not complete this part of the deliverable.
-- [ ] **Links** - I did not complete this part of the deliverable.
-- [ ] **Text** - I did not complete this part of the deliverable.
-- [ ] **3rd party API placeholder** - I did not complete this part of the deliverable.
-- [ ] **Images** - I did not complete this part of the deliverable.
-- [ ] **Login placeholder** - I did not complete this part of the deliverable.
-- [ ] **DB data placeholder** - I did not complete this part of the deliverable.
-- [ ] **WebSocket placeholder** - I did not complete this part of the deliverable.
+- [x] **HTML pages** - Ic reated pages for each part of my website in HTML
+- [x] **Proper HTML element usage** - I used each tag correctly for my tables, nav, headers, and footers, etc.
+- [x] **Links** - I have links connecting my pages together
+- [x] **Text** - I have text explaining each page and for each input 
+- [x] **3rd party API placeholder** - I have 4 spaces for API input on my Life Counts page
+- [x] **Images** - I am using an API to recieve inamges in 4 places
+- [x] **Login placeholder** - My login placeholder is in the home page
+- [x] **DB data placeholder** - I have a data place holder on my join a room page to keep a database of online clients
+- [x] **WebSocket placeholder** - I have 4 spots for weebsocket interaction for life counts on my life counts page
 
 ## 🚀 CSS deliverable
 
