@@ -72,12 +72,12 @@ For this deliverable I did the following. I checked the box `[x]` and added a de
 
 For this deliverable I did the following. I checked the box `[x]` and added a description for things I completed.
 
-- [ ] **Header, footer, and main content body** - I did not complete this part of the deliverable.
-- [ ] **Navigation elements** - I did not complete this part of the deliverable.
-- [ ] **Responsive to window resizing** - I did not complete this part of the deliverable.
-- [ ] **Application elements** - I did not complete this part of the deliverable.
-- [ ] **Application text content** - I did not complete this part of the deliverable.
-- [ ] **Application images** - I did not complete this part of the deliverable.
+- [x] **Header, footer, and main content body** - I implemented the bootstrap stylings for all sections of my site.
+- [x] **Navigation elements** - I modeled my navbar after the simon.css example
+- [x] **Responsive to window resizing** - I modeled my rezising after the simon example
+- [x] **Application elements** - I added a bootstrap grid where I will later have the backend updates sent to clients
+- [x] **Application text content** - I resized and formatted the texts to for the pages
+- [x] **Application images** - I applied my image location to the bootsrap grid I created.
 
 ## 🚀 React part 1: Routing deliverable
 
