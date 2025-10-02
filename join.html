@@ -55,33 +55,43 @@
     
         <span class="fs-3">Join a Friend:</span>
       </div>
-      <ul class="notification">
-        <li class="friends_online">Tim started a new game</li>
-        <li class="friends_online">Ada started a new game</li>
-        <li class="friends_online">Tim won 11 times in a row</li>
-      </ul>
-      <table class="table table-dark table-hover table-striped table-bordered rounded">
-    <thead>
-      <tr>
-        <th scope="col">Friend</th>
-        <th scope="col">Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>Alice</td>
-        <td><span class="badge bg-success">Online</span></td>
-      </tr>
-      <tr>
-        <td>Bob</td>
-        <td><span class="badge bg-danger">Offline</span></td>
-      </tr>
-      <tr>
-        <td>Charlie</td>
-        <td><span class="badge bg-warning text-dark">Away</span></td>
-      </tr>
-    </tbody>
-  </table>
+      
+      <div class="container mt-4 d-flex justify-content-center">
+  <div class="card bg-dark text-light shadow rounded" style="width: 400px;">
+    <div class="card-header text-center">
+      Friends Online
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-dark table-hover table-striped table-bordered mb-0 text-center">
+        <thead>
+          <tr>
+            <th scope="col">Friend</th>
+            <th scope="col">Status</th>
+            <th scope="col">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Alice</td>
+            <td><span class="badge bg-success">Online</span></td>
+            <td><button class="btn btn-sm btn-primary">Join</button></td>
+          </tr>
+          <tr>
+            <td>Bob</td>
+            <td><span class="badge bg-danger">Offline</span></td>
+            <td><button class="btn btn-sm btn-secondary" disabled>Join</button></td>
+          </tr>
+          <tr>
+            <td>Charlie</td>
+            <td><span class="badge bg-warning text-dark">Away</span></td>
+            <td><button class="btn btn-sm btn-primary">Join</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 
       <br />
 
