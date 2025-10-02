@@ -6,47 +6,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Join a Room</title>
     <link rel="icon" href="favicon.ico" />
+
+    <link rel="stylesheet" href="main.css">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi"
+      crossorigin="anonymous"
+    />
   </head>
-  <body>
+  <body class="bg-dark text-light">
     <!-- Use header, main, and footer elements to give semantic structure -->
     <header>
-      <h1>Join A Room<sup>&reg;</sup></h1>
-
-      <!-- Navigation elements -->
-      <nav>
-        <!-- Menu is a semantic alternative to <ul> that represents an interaction -->
-        <menu>
-          <li><a href="index.html">Home</a></li>
-          <li><a href="join.html">Join a Room</a></li>
-          <li><a href="tracker.html">Life Counts</a></li>
-          <li><a href="about.html">About</a></li>
+      
+      <nav class="navbar fixed-top navbar-dark">
+        <a class="navbar-brand" href="#">Table Top Tracker<sup>&reg;</sup></a>
+        <menu class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" href="index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="join.html">Join a Room</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="tracker.html">Life Counts</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="about.html">About</a>
+          </li>
         </menu>
       </nav>
+      
 
-      <!-- Since we don't have the ability to style we use old style HTML to give some visual formatting -->
       <hr />
     </header>
 
-    <main>
+    <main class="container-fluid bg-secondary text-center">
       <br>
       <div>
         <label for="code">Room Code</label>
-        <input type="text" id="code" placeholder="Your Code Here"  />
-        <button>Join</button>
+        <input type="text" id="code" class="form-control" placeholder="Your Code Here" />
+        <button type="submit" class=" btn btn-success">Join</button>
       </div>
 
       <br />
       
       <div class="friends">
     
-        <span class="friends_online">Friends Online:</span>
+        <span class="fs-3">Join a Friend:</span>
       </div>
       <ul class="notification">
         <li class="friends_online">Tim started a new game</li>
         <li class="friends_online">Ada started a new game</li>
         <li class="friends_online">Tim won 11 times in a row</li>
       </ul>
-     
+      <table class="table table-dark table-hover table-striped table-bordered rounded">
+    <thead>
+      <tr>
+        <th scope="col">Friend</th>
+        <th scope="col">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Alice</td>
+        <td><span class="badge bg-success">Online</span></td>
+      </tr>
+      <tr>
+        <td>Bob</td>
+        <td><span class="badge bg-danger">Offline</span></td>
+      </tr>
+      <tr>
+        <td>Charlie</td>
+        <td><span class="badge bg-warning text-dark">Away</span></td>
+      </tr>
+    </tbody>
+  </table>
 
       <br />
 
