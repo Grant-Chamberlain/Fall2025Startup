@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthState } from '../login/authState';
 
-export function Tracker() {
+
+export function Tracker({ authState }) {
+  const navigate = useNavigate();
+
+   useEffect(() => {
+    if (authState !== AuthState.Authenticated) {
+      navigate('/');
+    }
+  }, [authState, navigate]);
+
+  
   // Initialize players from localStorage or default to 4
   const [players, setPlayers] = useState(() => {
     const saved = localStorage.getItem('players');

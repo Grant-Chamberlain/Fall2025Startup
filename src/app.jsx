@@ -19,38 +19,38 @@ export default function App() {
     <BrowserRouter>
       <div className="body bg-dark text-light">
         <header className="container-fluid">
-          <nav className="navbar fixed-top navbar-dark">
+          <nav className="navbar  navbar-dark">
             <div className="navbar-brand">Table Top Tracker</div>
-            <menu className="navbar-nav">
-              {/* Login link always visible */}
-              <li className="nav-item">
-                <NavLink className="nav-link" to="/">
-                  Login
-                </NavLink>
-              </li>
+              <menu className="navbar-nav">
+                {/* Login link always visible */}
+                <li className="nav-item">
+                  <NavLink className="nav-link" to="/">
+                    Login
+                  </NavLink>
+                </li>
 
-              {/* Conditional links based on auth */}
-              {authState === AuthState.Authenticated && (
-                <>
-                  <li className="nav-item">
-                    <NavLink className="nav-link" to="/join">
-                      Join
-                    </NavLink>
-                  </li>
-                  <li className="nav-item">
-                    <NavLink className="nav-link" to="/tracker">
-                      Tracker
-                    </NavLink>
-                  </li>
-                </>
-              )}
+                {/* Conditional links based on auth */}
+                {authState === AuthState.Authenticated && (
+                  <>
+                    <li className="nav-item">
+                      <NavLink className="nav-link" to="/join">
+                        Join
+                      </NavLink>
+                    </li>
+                    <li className="nav-item">
+                      <NavLink className="nav-link" to="/tracker">
+                        Tracker
+                      </NavLink>
+                    </li>
+                  </>
+                )}
 
-              <li className="nav-item">
-                <NavLink className="nav-link" to="/about">
-                  About
-                </NavLink>
-              </li>
-            </menu>
+                <li className="nav-item">
+                  <NavLink className="nav-link" to="/about">
+                    About
+                  </NavLink>
+                </li>
+              </menu>
           </nav>
         </header>
 
@@ -75,9 +75,13 @@ export default function App() {
               <Join authState={authState} />
             }
           />
+          <Route
+            path="/tracker"
+            element={<Tracker authState={authState} />}
+          />
 
-          <Route path="/join" element={<Join />} />
-          <Route path="/tracker" element={<Tracker />} />
+
+
           <Route path="/about" element={<About />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
