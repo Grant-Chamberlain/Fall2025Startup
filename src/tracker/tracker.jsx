@@ -39,7 +39,7 @@ export function Tracker() {
   // Remove a player
   function handleRemovePlayer(index) {
     if (players.length <= 2) {
-      alert(`Cannot remove player ${i + 1} when there are only two players left.`);
+      alert(`Cannot remove player ${index + 1} when there are only two players left.`);
       return;
     }
     const updatedPlayers = players.filter((_, i) => i !== index);
@@ -76,63 +76,65 @@ export function Tracker() {
         </div>
         <div className="row g-4 mb-4">
           {players.map((player, i) => (
-            <div key={i} className="col-12 col-sm-6 col-lg-4">
-              <div className="card text-center shadow bg-dark text-light h-100 d-flex flex-column">
+            <div key={i} className={`col-12 col-sm-6 col-lg-4 ${players.length === 4 ? 'col-lg-6' : 'col-lg-4'} `}>
+              <div
+              className={`card text-center shadow bg-dark text-light d-flex flex-column ${players.length !== 4 ? 'h-100' : ''
+                }`}>
 
-                {/* Card Header: Player Name */}
-                <div className="card-header p-2">
-                  <input
-                    type="text"
-                    className="form-control form-control-sm text-center fw-bold fs-4"
-                    placeholder={`Player ${i + 1}`}
-                    value={player.name}
-                    onChange={(e) => handleInputChange(i, 'name', e.target.value)}
-                  />
-                </div>
-
-                {/* Card Image */}
-                <img
-                  src="kalia.png"
-                  className="card-img-top"
-                  alt="Commander"
-                  style={{ objectFit: 'cover', height: '180px' }}
+              {/* Card Header: Player Name */}
+              <div className="card-header p-2">
+                <input
+                  type="text"
+                  className="form-control form-control-sm text-center fw-bold fs-4"
+                  placeholder={`Player ${i + 1}`}
+                  value={player.name}
+                  onChange={(e) => handleInputChange(i, 'name', e.target.value)}
                 />
-
-                {/* Card Body: Stats */}
-                <div className="card-body flex-grow-1 d-flex flex-column justify-content-center">
-                  <div className="row g-2 mb-3">
-                    {['health', 'energy', 'poison', 'other'].map((field) => (
-                      <div className="col" key={field}>
-                        <input
-                          type={field === 'other' ? 'text' : 'number'}
-                          className="form-control text-center"
-                          placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                          value={player[field]}
-                          onChange={(e) => handleInputChange(i, field, e.target.value)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Card Footer: Remove Button */}
-                <div className="card-footer p-2">
-                  <button
-                    className="btn btn-sm btn-warning w-100"
-                    onClick={() => handleRemovePlayer(i)}
-                    disabled={players.length <= 2}
-                  >
-                    Remove Player
-                  </button>
-                </div>
-
               </div>
+
+              {/* Card Image */}
+              <img
+                src="kalia.png"
+                className="card-img-top"
+                alt="Commander"
+                style={{ objectFit: 'cover', height: '250px' }}
+              />
+
+              {/* Card Body: Stats */}
+              <div className="card-body flex-grow-1 d-flex flex-column justify-content-center">
+                <div className="row g-2 mb-3">
+                  {['health', 'energy', 'poison', 'other'].map((field) => (
+                    <div className="col" key={field}>
+                      <input
+                        type={field === 'other' ? 'text' : 'number'}
+                        className="form-control text-center"
+                        placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                        value={player[field]}
+                        onChange={(e) => handleInputChange(i, field, e.target.value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Card Footer: Remove Button */}
+              <div className="card-footer p-2">
+                <button
+                  className="btn btn-sm btn-warning w-100"
+                  onClick={() => handleRemovePlayer(i)}
+                  disabled={players.length <= 2}
+                >
+                  Remove Player
+                </button>
+              </div>
+
+            </div>
             </div>
           ))}
 
-        </div>
-
       </div>
-    </main>
+
+    </div>
+    </main >
   );
 }
