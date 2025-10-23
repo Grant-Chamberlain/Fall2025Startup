@@ -7,12 +7,12 @@ export function Tracker() {
     return saved
       ? JSON.parse(saved)
       : Array(4).fill({
-          name: '',
-          health: '',
-          energy: '',
-          poison: '',
-          other: '',
-        });
+        name: '',
+        health: '',
+        energy: '',
+        poison: '',
+        other: '',
+      });
   });
 
   // Save to localStorage whenever players change
@@ -34,6 +34,18 @@ export function Tracker() {
       { name: '', health: '', energy: '', poison: '', other: '' },
     ]);
   }
+
+
+  // Remove a player
+  function handleRemovePlayer(index) {
+    if (players.length <= 2) {
+      alert(`Cannot remove player ${i + 1} when there are only two players left.`);
+      return;
+    }
+    const updatedPlayers = players.filter((_, i) => i !== index);
+    setPlayers(updatedPlayers);
+  }
+
 
   // Reset all fields (but keep same number of players)
   function handleReset() {
@@ -66,7 +78,15 @@ export function Tracker() {
                     onChange={(e) =>
                       handleInputChange(i, 'name', e.target.value)
                     }
+
                   />
+                  <button
+                    className="btn btn-sm btn-warning mt-2"
+                    onClick={() => handleRemovePlayer(i)}
+                    disabled={players.length <= 2}
+                  >
+                    Remove
+                  </button>
                 </div>
 
                 <img
@@ -106,6 +126,7 @@ export function Tracker() {
           <button className="btn btn-danger" onClick={handleReset}>
             🔄 Reset All
           </button>
+          
         </div>
       </div>
     </main>
