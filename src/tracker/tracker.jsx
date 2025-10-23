@@ -65,39 +65,42 @@ export function Tracker() {
   return (
     <main className="bg-secondary text-light min-vh-100 p-4">
       <div className="container">
+        {/* Top Controls */}
+        <div className="d-flex justify-content-end mb-4 gap-2">
+          <button className="btn btn-success" onClick={handleAddPlayer}>
+            ➕ Add Player
+          </button>
+          <button className="btn btn-danger" onClick={handleReset}>
+            🔄 Reset All
+          </button>
+        </div>
         <div className="row g-4 mb-4">
           {players.map((player, i) => (
             <div key={i} className="col-12 col-sm-6 col-lg-4">
-              <div className="card text-center shadow bg-dark text-light">
+              <div className="card text-center shadow bg-dark text-light h-100 d-flex flex-column">
+
+                {/* Card Header: Player Name */}
                 <div className="card-header p-2">
                   <input
                     type="text"
                     className="form-control form-control-sm text-center fw-bold fs-4"
                     placeholder={`Player ${i + 1}`}
                     value={player.name}
-                    onChange={(e) =>
-                      handleInputChange(i, 'name', e.target.value)
-                    }
-
+                    onChange={(e) => handleInputChange(i, 'name', e.target.value)}
                   />
-                  <button
-                    className="btn btn-sm btn-warning mt-2"
-                    onClick={() => handleRemovePlayer(i)}
-                    disabled={players.length <= 2}
-                  >
-                    Remove
-                  </button>
                 </div>
 
+                {/* Card Image */}
                 <img
                   src="kalia.png"
                   className="card-img-top"
                   alt="Commander"
-                  style={{ objectFit: 'cover', height: '200px' }}
+                  style={{ objectFit: 'cover', height: '180px' }}
                 />
 
-                <div className="card-body">
-                  <div className="row g-2">
+                {/* Card Body: Stats */}
+                <div className="card-body flex-grow-1 d-flex flex-column justify-content-center">
+                  <div className="row g-2 mb-3">
                     {['health', 'energy', 'poison', 'other'].map((field) => (
                       <div className="col" key={field}>
                         <input
@@ -105,29 +108,30 @@ export function Tracker() {
                           className="form-control text-center"
                           placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
                           value={player[field]}
-                          onChange={(e) =>
-                            handleInputChange(i, field, e.target.value)
-                          }
+                          onChange={(e) => handleInputChange(i, field, e.target.value)}
                         />
                       </div>
                     ))}
                   </div>
                 </div>
+
+                {/* Card Footer: Remove Button */}
+                <div className="card-footer p-2">
+                  <button
+                    className="btn btn-sm btn-warning w-100"
+                    onClick={() => handleRemovePlayer(i)}
+                    disabled={players.length <= 2}
+                  >
+                    Remove Player
+                  </button>
+                </div>
+
               </div>
             </div>
           ))}
+
         </div>
 
-        {/* Add Player & Reset Buttons */}
-        <div className="d-flex justify-content-center gap-3 mb-5">
-          <button className="btn btn-success" onClick={handleAddPlayer}>
-            ➕ Add Player
-          </button>
-          <button className="btn btn-danger" onClick={handleReset}>
-            🔄 Reset All
-          </button>
-          
-        </div>
       </div>
     </main>
   );
