@@ -8,7 +8,7 @@ import { Login } from './login/login';
 import { Join } from './join/join';
 import { Tracker } from './tracker/tracker';
 import { About } from './about/about';
-import {AuthState } from './login/authState'
+import { AuthState } from './login/authState'
 
 export default function App() {
   const [userName, setUserName] = React.useState(localStorage.getItem('userName') || '');
@@ -16,7 +16,7 @@ export default function App() {
   const currentAuthState = userName ? AuthState.Authenticated : AuthState.Unauthenticated;
   const [authState, setAuthState] = React.useState(currentAuthState);
   return (
-  <BrowserRouter>
+    <BrowserRouter>
       <div className="body bg-dark text-light">
         <header className="container-fluid">
           <nav className="navbar fixed-top navbar-dark">
@@ -39,7 +39,7 @@ export default function App() {
                   </li>
                   <li className="nav-item">
                     <NavLink className="nav-link" to="/tracker">
-                      Scores
+                      Tracker
                     </NavLink>
                   </li>
                 </>
@@ -69,6 +69,13 @@ export default function App() {
               />
             }
           />
+          <Route
+            path="/join"
+            element={
+              <Join authState={authState} />
+            }
+          />
+
           <Route path="/join" element={<Join />} />
           <Route path="/tracker" element={<Tracker />} />
           <Route path="/about" element={<About />} />

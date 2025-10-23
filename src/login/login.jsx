@@ -1,27 +1,40 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthState } from './authState';
 
-export function Login() {
+export function Login(props) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  function handleLogin(e) {
-    e.preventDefault();
-
-    // Simple placeholder login logic
-    if (email === 'test@example.com' && password === '1234') {
-      alert('Login successful!');
-      navigate('/join');
-    } else {
-      alert('Invalid email or password.');
+  // Login button handler
+  const handleLogin = () => {
+    if (!email || !password) {
+      alert('Please enter your email and password.');
+      return;
     }
-  }
 
-  function handleCreateError(e) {
-    e.preventDefault();
-    alert('Account creation is currently disabled. Please contact support.');
-  }
+    // For now, just accept any email/password
+    props.onAuthChange(email, AuthState.Authenticated);
+
+    // Navigate to Tracker page
+    navigate('/tracker');
+  };
+
+  // Create User button handler
+  const handleCreateUser = () => {
+    const newUserName = prompt('Enter your username:');
+    if (!newUserName) {
+      alert('Username is required!');
+      return;
+    }
+
+    // Set auth state to authenticated
+    props.onAuthChange(newUserName, AuthState.Authenticated);
+
+    // Navigate to Tracker page
+    navigate('/tracker');
+  };
 
   return (
     <main className="container-fluid bg-secondary text-center min-vh-100 d-flex flex-column justify-content-center align-items-center">
@@ -30,6 +43,7 @@ export function Login() {
       <form
         className="bg-dark p-4 rounded shadow text-light"
         style={{ width: '320px' }}
+        onSubmit={(e) => e.preventDefault()} // Prevent actual form submission
       >
         <div className="mb-3">
           <input
@@ -40,6 +54,7 @@ export function Login() {
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
+
         <div className="mb-3">
           <input
             className="form-control"
@@ -49,18 +64,20 @@ export function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
+
         <div className="d-flex justify-content-between">
           <button
-            type="submit"
+            type="button"
             className="btn btn-primary w-50 me-2"
             onClick={handleLogin}
           >
             Login
           </button>
+
           <button
             type="button"
-            className="btn btn-danger w-50"
-            onClick={handleCreateError}
+            className="btn btn-success w-50"
+            onClick={handleCreateUser}
           >
             Create
           </button>
@@ -69,4 +86,3 @@ export function Login() {
     </main>
   );
 }
-
