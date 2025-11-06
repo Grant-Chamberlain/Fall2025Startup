@@ -1,42 +1,66 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthState } from './authState';
+import { AuthState } from '../authState';
+import { login, register, logout } from '../services/auth';
 
 export function Login({ userName, authState, onAuthChange }) {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Handle login
-  function handleLogin() {
-    if (!email.trim()) {
-      alert('Please enter a username');
+  // Handle user login
+  async function handleLogin() {
+    if (!email.trim() || !password.trim()) {
+      alert('Please enter both email and password.');
       return;
     }
-    onAuthChange(email, AuthState.Authenticated);
-    navigate('/tracker');
+
+    setLoading(true);
+    try {
+      const data = await login(email, password);
+      onAuthChange(data.email, AuthState.Authenticated);
+      navigate('/tracker');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Handle user creation (signup)
+  async function handleCreateUser() {
+    if (!email.trim() || !password.trim()) {
+      alert('Email and password are required.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await register(email, password);
+      onAuthChange(data.email, AuthState.Authenticated);
+      navigate('/tracker');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Handle logout
-  function handleLogout() {
-    onAuthChange('', AuthState.Unauthenticated);
-    localStorage.removeItem('userName');
-    navigate('/');
-  }
-
-  // Handle create user
-  const handleCreateUser = () => {
-    const newUserName = prompt('Enter your username:');
-    if (!newUserName) {
-      alert('Username is required!');
-      return;
+  async function handleLogout() {
+    setLoading(true);
+    try {
+      await logout();
+      onAuthChange('', AuthState.Unauthenticated);
+      navigate('/');
+    } catch (err) {
+      console.error('Logout failed:', err);
+    } finally {
+      setLoading(false);
     }
-
-    onAuthChange(newUserName, AuthState.Authenticated);
-    localStorage.setItem('userName', newUserName);
-    navigate('/tracker');
-  };
+  }
 
   return (
     <main className="container-fluid bg-secondary text-center min-vh-100 d-flex flex-column justify-content-center align-items-center">
@@ -45,8 +69,12 @@ export function Login({ userName, authState, onAuthChange }) {
       {authState === AuthState.Authenticated ? (
         <div>
           <p>Logged in as: <strong>{userName}</strong></p>
-          <button className="btn btn-danger" onClick={handleLogout}>
-            Logout
+          <button
+            className="btn btn-danger"
+            onClick={handleLogout}
+            disabled={loading}
+          >
+            {loading ? 'Logging out...' : 'Logout'}
           </button>
         </div>
       ) : (
@@ -62,6 +90,7 @@ export function Login({ userName, authState, onAuthChange }) {
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
             />
           </div>
 
@@ -72,6 +101,7 @@ export function Login({ userName, authState, onAuthChange }) {
               placeholder="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
             />
           </div>
 
@@ -80,16 +110,18 @@ export function Login({ userName, authState, onAuthChange }) {
               type="button"
               className="btn btn-primary w-50 me-2"
               onClick={handleLogin}
+              disabled={loading}
             >
-              Login
+              {loading ? 'Logging in...' : 'Login'}
             </button>
 
             <button
               type="button"
               className="btn btn-success w-50"
               onClick={handleCreateUser}
+              disabled={loading}
             >
-              Create
+              {loading ? 'Creating...' : 'Create'}
             </button>
           </div>
         </form>
@@ -97,4 +129,3 @@ export function Login({ userName, authState, onAuthChange }) {
     </main>
   );
 }
-
