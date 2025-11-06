@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
+
 export function Tracker() {
   // Initialize players from localStorage or default to 4 separate objects
   const [players, setPlayers] = useState(() => {

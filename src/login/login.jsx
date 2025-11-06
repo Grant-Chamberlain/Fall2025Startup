@@ -1,26 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthState } from '../authState';
-import { login, register, logout } from '../services/auth';
+import { AuthState } from './authState';
+import { login, register, logout } from '../../service/auth';
 
 export function Login({ userName, authState, onAuthChange }) {
   const navigate = useNavigate();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Handle user login
+  // Login handler
   async function handleLogin() {
     if (!email.trim() || !password.trim()) {
       alert('Please enter both email and password.');
       return;
     }
-
     setLoading(true);
     try {
       const data = await login(email, password);
-      onAuthChange(data.email, AuthState.Authenticated);
+      onAuthChange(data.email, AuthState.Authenticated); // update React state only
       navigate('/tracker');
     } catch (err) {
       alert(err.message);
@@ -29,13 +27,12 @@ export function Login({ userName, authState, onAuthChange }) {
     }
   }
 
-  // Handle user creation (signup)
+  // Registration handler
   async function handleCreateUser() {
     if (!email.trim() || !password.trim()) {
       alert('Email and password are required.');
       return;
     }
-
     setLoading(true);
     try {
       const data = await register(email, password);
@@ -48,7 +45,7 @@ export function Login({ userName, authState, onAuthChange }) {
     }
   }
 
-  // Handle logout
+  // Logout handler
   async function handleLogout() {
     setLoading(true);
     try {
@@ -56,7 +53,7 @@ export function Login({ userName, authState, onAuthChange }) {
       onAuthChange('', AuthState.Unauthenticated);
       navigate('/');
     } catch (err) {
-      console.error('Logout failed:', err);
+      console.error('Logout failed', err);
     } finally {
       setLoading(false);
     }
@@ -81,7 +78,7 @@ export function Login({ userName, authState, onAuthChange }) {
         <form
           className="bg-dark p-4 rounded shadow text-light"
           style={{ width: '320px' }}
-          onSubmit={(e) => e.preventDefault()} // prevent form submission
+          onSubmit={(e) => e.preventDefault()}
         >
           <div className="mb-3">
             <input
