@@ -7,7 +7,7 @@ const cors = require('cors');
 const authCookieName = 'token';
 
 app.use(cors({
-  origin: 'http://localhost:5173', // React dev server
+  origin: 'https://startup.tabletoptracker.click', // React dev server
   credentials: true, // allows sending/receiving cookies
 }));
 // The scores and users are saved in memory and disappear whenever the service is restarted.
