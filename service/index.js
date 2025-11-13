@@ -3,54 +3,74 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const uuid = require('uuid');
-const DB = require('./database.js'); // your database functions
+const { MongoClient } = require('mongodb');
+const DBConfig = require('./dbConfig.json');
 
 const app = express();
 const authCookieName = 'token';
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 4000;
 const isProduction = process.env.NODE_ENV === 'production';
 
 // --- Middleware ---
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public'))); // serve React build
+app.use(express.static(path.join(__dirname, 'public')));
 
-// --- Helper functions ---
+// --- MongoDB Setup ---
+const url = `mongodb+srv://${DBConfig.userName}:${DBConfig.password}@${DBConfig.hostname}`;
+const client = new MongoClient(url);
+
+let db, userCollection, scoreCollection;
+
+// --- Helper Functions ---
 async function findUser(field, value) {
   if (!value) return null;
-  if (field === 'token') return DB.getUserByToken(value);
-  return DB.getUser(value);
+  if (field === 'token') return userCollection.findOne({ token: value });
+  return userCollection.findOne({ email: value });
 }
 
 async function createUser(email, password) {
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = {
-    email,
-    password: passwordHash,
-    token: uuid.v4(),
-    createdAt: new Date(),
-  };
-  await DB.addUser(user);
+  const token = uuid.v4();
+  const user = { email, password: passwordHash, token, createdAt: new Date() };
+  await userCollection.insertOne(user);
   return user;
+}
+
+async function updateUser(user) {
+  await userCollection.updateOne({ email: user.email }, { $set: user });
+}
+
+async function addScore(score) {
+  await scoreCollection.insertOne(score);
+}
+
+async function getHighScores() {
+  const cursor = scoreCollection
+    .find({ score: { $gt: 0, $lt: 900 } })
+    .sort({ score: -1 })
+    .limit(10);
+  return cursor.toArray();
 }
 
 function setAuthCookie(res, token) {
   res.cookie(authCookieName, token, {
     maxAge: 1000 * 60 * 60 * 24 * 365, // 1 year
     httpOnly: true,
-    secure: isProduction,          // HTTPS only in production
+    secure: isProduction,
     sameSite: 'strict',
   });
 }
 
-// --- Middleware to verify auth ---
+// --- Auth Middleware ---
 async function verifyAuth(req, res, next) {
-  const user = await findUser('token', req.cookies[authCookieName]);
+  const token = req.cookies[authCookieName];
+  const user = token ? await findUser('token', token) : null;
   if (user) next();
   else res.status(401).send({ msg: 'Unauthorized' });
 }
 
-// --- API routes ---
+// --- API Routes ---
 const apiRouter = express.Router();
 app.use('/api', apiRouter);
 
@@ -82,7 +102,7 @@ apiRouter.post('/auth/login', async (req, res) => {
     if (!valid) return res.status(401).send({ msg: 'Unauthorized' });
 
     user.token = uuid.v4();
-    await DB.updateUser(user);
+    await updateUser(user);
     setAuthCookie(res, user.token);
     res.send({ email: user.email });
   } catch (err) {
@@ -94,10 +114,11 @@ apiRouter.post('/auth/login', async (req, res) => {
 // Logout
 apiRouter.delete('/auth/logout', async (req, res) => {
   try {
-    const user = await findUser('token', req.cookies[authCookieName]);
+    const token = req.cookies[authCookieName];
+    const user = token ? await findUser('token', token) : null;
     if (user) {
       delete user.token;
-      await DB.updateUser(user);
+      await updateUser(user);
     }
     res.clearCookie(authCookieName);
     res.status(204).end();
@@ -110,7 +131,8 @@ apiRouter.delete('/auth/logout', async (req, res) => {
 // Auth status
 apiRouter.get('/auth/status', async (req, res) => {
   try {
-    const user = await findUser('token', req.cookies[authCookieName]);
+    const token = req.cookies[authCookieName];
+    const user = token ? await findUser('token', token) : null;
     res.send(user ? { authenticated: true, email: user.email } : { authenticated: false });
   } catch (err) {
     console.error('❌ /auth/status error:', err);
@@ -120,13 +142,13 @@ apiRouter.get('/auth/status', async (req, res) => {
 
 // Scores
 apiRouter.get('/scores', verifyAuth, async (_req, res) => {
-  const scores = await DB.getHighScores();
+  const scores = await getHighScores();
   res.send(scores);
 });
 
 apiRouter.post('/score', verifyAuth, async (req, res) => {
-  await DB.addScore(req.body);
-  const scores = await DB.getHighScores();
+  await addScore(req.body);
+  const scores = await getHighScores();
   res.send(scores);
 });
 
@@ -135,6 +157,22 @@ app.use((_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// --- Start server ---
-app.listen(port, () => console.log(`🚀 Listening on port ${port}`));
+// --- Start Server after DB is connected ---
+async function startServer() {
+  try {
+    await client.connect();
+    db = client.db('tabletoptracker');
+    userCollection = db.collection('users');
+    scoreCollection = db.collection('scores');
+    console.log('✅ Connected to MongoDB');
+
+    app.listen(port, () => console.log(`🚀 Listening on port ${port}`));
+  } catch (err) {
+    console.error('❌ Failed to connect to MongoDB:', err);
+    process.exit(1);
+  }
+}
+
+startServer();
+
 
