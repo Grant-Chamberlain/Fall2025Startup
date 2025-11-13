@@ -18,7 +18,7 @@ export function Login({ userName, authState, onAuthChange }) {
     setLoading(true);
     try {
       const data = await login(email, password);
-      onAuthChange(data.email, AuthState.Authenticated); // update React state only
+      onAuthChange(data.email, AuthState.Authenticated);
       navigate('/tracker');
     } catch (err) {
       alert(err.message);
