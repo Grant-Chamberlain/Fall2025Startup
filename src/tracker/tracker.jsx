@@ -12,7 +12,7 @@ export function Tracker({ userName }) {
   // CONNECT WEBSOCKET
   // -----------------------------------------------------
   useEffect(() => {
-    socket.current = new WebSocket("ws://localhost:4000");
+    socket.current = new WebSocket("wss://startup.tabletoptracker.click");
 
     socket.current.onopen = () => {
       console.log("WS Connected");

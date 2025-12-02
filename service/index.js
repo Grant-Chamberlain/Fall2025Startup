@@ -1,10 +1,10 @@
+// server.js
 const express = require('express');
 const http = require('http');
-
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
-const uuid = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 const { MongoClient } = require('mongodb');
 const DBConfig = require('./dbConfig.json');
 
@@ -20,11 +20,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // --- MongoDB Setup ---
 const url = `mongodb+srv://${DBConfig.userName}:${DBConfig.password}@${DBConfig.hostname}`;
-const client = new MongoClient(url);
+const client = new MongoClient(url, { useUnifiedTopology: true });
 
 let db, userCollection, scoreCollection;
 
-// --- Helper Functions ---
 async function findUser(field, value) {
   if (!value) return null;
   if (field === 'token') return userCollection.findOne({ token: value });
@@ -33,17 +32,21 @@ async function findUser(field, value) {
 
 async function createUser(email, password) {
   const passwordHash = await bcrypt.hash(password, 10);
-  const token = uuid.v4();
+  const token = uuidv4();
   const user = { email, password: passwordHash, token, createdAt: new Date() };
   await userCollection.insertOne(user);
   return user;
 }
 
 async function updateUser(user) {
-  await userCollection.updateOne({ email: user.email }, { $set: user });
+  const { _id, ...rest } = user; // prevent overwriting _id
+  await userCollection.updateOne({ _id }, { $set: rest });
 }
 
 async function addScore(score) {
+  if (!score || typeof score.score !== 'number' || !score.email) {
+    throw new Error('Invalid score object');
+  }
   await scoreCollection.insertOne(score);
 }
 
@@ -68,8 +71,12 @@ function setAuthCookie(res, token) {
 async function verifyAuth(req, res, next) {
   const token = req.cookies[authCookieName];
   const user = token ? await findUser('token', token) : null;
-  if (user) next();
-  else res.status(401).send({ msg: 'Unauthorized' });
+  if (user) {
+    req.user = user;
+    next();
+  } else {
+    res.status(401).send({ msg: 'Unauthorized' });
+  }
 }
 
 // --- API Routes ---
@@ -103,16 +110,15 @@ apiRouter.post('/auth/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ msg: 'Unauthorized' });
 
-    user.token = uuid.v4();
+    user.token = uuidv4();
     await updateUser(user);
     setAuthCookie(res, user.token);
-    res.json({ email: user.email }); // explicitly send JSON
+    res.json({ email: user.email });
   } catch (err) {
     console.error('❌ /auth/login error:', err);
     res.status(500).json({ type: err.name, message: err.message });
   }
 });
-
 
 // Logout
 apiRouter.delete('/auth/logout', async (req, res) => {
@@ -145,14 +151,24 @@ apiRouter.get('/auth/status', async (req, res) => {
 
 // Scores
 apiRouter.get('/scores', verifyAuth, async (_req, res) => {
-  const scores = await getHighScores();
-  res.send(scores);
+  try {
+    const scores = await getHighScores();
+    res.send(scores);
+  } catch (err) {
+    console.error('❌ /scores error:', err);
+    res.status(500).send({ msg: 'Failed to fetch scores' });
+  }
 });
 
 apiRouter.post('/score', verifyAuth, async (req, res) => {
-  await addScore(req.body);
-  const scores = await getHighScores();
-  res.send(scores);
+  try {
+    await addScore(req.body);
+    const scores = await getHighScores();
+    res.send(scores);
+  } catch (err) {
+    console.error('❌ /score error:', err);
+    res.status(500).send({ msg: 'Failed to save score' });
+  }
 });
 
 // --- SPA fallback ---
@@ -160,7 +176,7 @@ app.use((_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// --- Start Server after DB is connected ---
+// --- Start Server ---
 async function startServer() {
   try {
     await client.connect();
@@ -170,11 +186,11 @@ async function startServer() {
     console.log('✅ Connected to MongoDB');
 
     const server = http.createServer(app);
+
+    // Initialize WebSocket server
     require('./websocket')(server);
 
-    server.listen(port, () => console.log(`🚀 Listening on port ${port}`)
-  );
-
+    server.listen(port, () => console.log(`🚀 Listening on port ${port}`));
   } catch (err) {
     console.error('❌ Failed to connect to MongoDB:', err);
     process.exit(1);
@@ -182,5 +198,3 @@ async function startServer() {
 }
 
 startServer();
-
-
