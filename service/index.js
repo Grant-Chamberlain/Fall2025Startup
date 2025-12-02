@@ -1,4 +1,6 @@
 const express = require('express');
+const http = require('http');
+
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
@@ -96,20 +98,21 @@ apiRouter.post('/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await findUser('email', email);
-    if (!user) return res.status(401).send({ msg: 'Unauthorized' });
+    if (!user) return res.status(401).json({ msg: 'Unauthorized' });
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(401).send({ msg: 'Unauthorized' });
+    if (!valid) return res.status(401).json({ msg: 'Unauthorized' });
 
     user.token = uuid.v4();
     await updateUser(user);
     setAuthCookie(res, user.token);
-    res.send({ email: user.email });
+    res.json({ email: user.email }); // explicitly send JSON
   } catch (err) {
     console.error('❌ /auth/login error:', err);
-    res.status(500).send({ type: err.name, message: err.message });
+    res.status(500).json({ type: err.name, message: err.message });
   }
 });
+
 
 // Logout
 apiRouter.delete('/auth/logout', async (req, res) => {
@@ -166,7 +169,12 @@ async function startServer() {
     scoreCollection = db.collection('scores');
     console.log('✅ Connected to MongoDB');
 
-    app.listen(port, () => console.log(`🚀 Listening on port ${port}`));
+    const server = http.createServer(app);
+    require('./websocket')(server);
+
+    server.listen(port, () => console.log(`🚀 Listening on port ${port}`)
+  );
+
   } catch (err) {
     console.error('❌ Failed to connect to MongoDB:', err);
     process.exit(1);

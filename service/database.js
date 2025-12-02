@@ -9,12 +9,10 @@ let users;
 
 async function connectDB() {
   try {
-    if (!client.topology || !client.topology.isConnected()) {
-      await client.connect();
-    }
+    await client.connect(); // safe to call multiple times
 
-    db = client.db('tabletoptracker'); // database name
-    users = db.collection('users');    // collection reference
+    db = client.db('tabletoptracker');
+    users = db.collection('users');
 
     console.log(`✅ Connected to MongoDB at ${config.hostname}`);
     return db;
