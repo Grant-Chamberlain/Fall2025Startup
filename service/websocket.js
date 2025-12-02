@@ -1,183 +1,138 @@
-const WebSocket = require("ws");
-const crypto = require("crypto");
-const Room = require("./models/Room");
+const WebSocket = require('ws');
+const crypto = require('crypto');
+const Room = require('./models/Room'); // Mongoose model
 
-// Map of active user connections: userId → ws
-const activeConnections = new Map();
+const activeConnections = new Map(); // userId → ws
 
-// Broadcast data to all connected players in a room
+// Broadcast room state to all connected players
 function broadcastToRoom(room, data) {
-  const obj = room.toObject ? room.toObject() : room;
-  obj.players.forEach((p) => {
-    const ws = activeConnections.get(p.userId);
+  const roomObj = room.toObject();
+  roomObj.players.forEach((player) => {
+    const ws = activeConnections.get(player.userId);
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(data));
     }
   });
 }
 
-// Setup WebSocket server
 function setupWebSocket(server) {
   const wss = new WebSocket.Server({ server });
 
-  wss.on("connection", (ws) => {
-    console.log("Client connected");
+  wss.on('connection', (ws) => {
+    console.log('Client connected');
 
-    ws.on("message", async (data) => {
+    ws.on('message', async (rawData) => {
       let msg;
       try {
-        msg = JSON.parse(data);
-      } catch (err) {
-        console.log("Bad JSON:", data);
-        ws.send(JSON.stringify({ type: "error", message: "Invalid JSON" }));
+        msg = JSON.parse(rawData);
+      } catch {
+        console.log('Bad JSON:', rawData);
         return;
       }
 
       const { type } = msg;
 
-      // -----------------------------------------
+      // ------------------------
       // CREATE ROOM
-      // -----------------------------------------
-      if (type === "create-room") {
-        const { roomCode, name, userId } = msg;
-
-        try {
-          const existing = await Room.findOne({ roomCode });
-          if (existing) {
-            ws.send(JSON.stringify({ type: "error", message: "Room exists" }));
-            return;
-          }
-
-          const creatorId = userId || crypto.randomUUID();
-          activeConnections.set(creatorId, ws);
-
-          const room = new Room({
-            roomCode,
-            players: [
-              {
-                userId: creatorId,
-                name,
-                health: 40,
-                energy: 0,
-                poison: 0,
-                other: "",
-              },
-            ],
-            updatedAt: new Date(),
-          });
-
-          await room.save();
-
-          ws.send(
-            JSON.stringify({ type: "room-created", roomCode, userId: creatorId })
-          );
-          broadcastToRoom(room, { type: "room-update", room: room.toObject() });
-        } catch (err) {
-          console.error(err);
-          ws.send(JSON.stringify({ type: "error", message: err.message }));
+      // ------------------------
+      if (type === 'create-room') {
+        const { roomCode } = msg;
+        const existing = await Room.findOne({ roomCode });
+        if (existing) {
+          ws.send(JSON.stringify({ type: 'error', message: 'Room exists' }));
+          return;
         }
+
+        const room = new Room({
+          roomCode,
+          players: [],
+        });
+
+        await room.save();
+
+        ws.send(JSON.stringify({ type: 'room-created', roomCode }));
       }
 
-      // -----------------------------------------
+      // ------------------------
       // JOIN ROOM
-      // -----------------------------------------
-      if (type === "join-room") {
+      // ------------------------
+      if (type === 'join-room') {
         const { roomCode, name, userId } = msg;
-
-        try {
-          const room = await Room.findOne({ roomCode });
-          if (!room) {
-            ws.send(JSON.stringify({ type: "error", message: "Room not found" }));
-            return;
-          }
-
-          const id = userId || crypto.randomUUID();
-          activeConnections.set(id, ws);
-
-          let player = room.players.find((p) => p.userId === id);
-          if (!player) {
-            player = { userId: id, name, health: 40, energy: 0, poison: 0, other: "" };
-            room.players.push(player);
-          } else {
-            player.name = name;
-          }
-
-          room.updatedAt = new Date();
-          await room.save();
-
-          ws.send(JSON.stringify({ type: "joined-room", roomCode, userId: id }));
-          broadcastToRoom(room, { type: "room-update", room: room.toObject() });
-        } catch (err) {
-          console.error(err);
-          ws.send(JSON.stringify({ type: "error", message: err.message }));
+        const room = await Room.findOne({ roomCode });
+        if (!room) {
+          ws.send(JSON.stringify({ type: 'error', message: 'Room not found' }));
+          return;
         }
+
+        const id = userId || crypto.randomUUID();
+        activeConnections.set(id, ws);
+
+        let player = room.players.find((p) => p.userId === id);
+        if (!player) {
+          player = {
+            userId: id,
+            name,
+            health: 40,
+            energy: 0,
+            poison: 0,
+            other: '',
+          };
+          room.players.push(player);
+        } else {
+          player.name = name; // update display name
+        }
+
+        room.updatedAt = new Date();
+        await room.save();
+
+        ws.send(JSON.stringify({ type: 'joined-room', roomCode, userId: id }));
+
+        broadcastToRoom(room, { type: 'room-update', room });
       }
 
-      // -----------------------------------------
+      // ------------------------
       // REJOIN ROOM
-      // -----------------------------------------
-      if (type === "rejoin-room") {
+      // ------------------------
+      if (type === 'rejoin-room') {
         const { roomCode, userId } = msg;
+        const room = await Room.findOne({ roomCode });
+        if (!room) return;
 
-        try {
-          const room = await Room.findOne({ roomCode });
-          if (!room) {
-            ws.send(JSON.stringify({ type: "error", message: "Room not found" }));
-            return;
-          }
+        const player = room.players.find((p) => p.userId === userId);
+        if (!player) return;
 
-          const player = room.players.find((p) => p.userId === userId);
-          if (!player) {
-            ws.send(JSON.stringify({ type: "error", message: "Player not found" }));
-            return;
-          }
+        activeConnections.set(userId, ws);
 
-          activeConnections.set(userId, ws);
-
-          ws.send(JSON.stringify({ type: "rejoined-room", room: room.toObject() }));
-          broadcastToRoom(room, { type: "room-update", room: room.toObject() });
-        } catch (err) {
-          console.error(err);
-          ws.send(JSON.stringify({ type: "error", message: err.message }));
-        }
+        ws.send(JSON.stringify({ type: 'rejoined-room', room }));
+        broadcastToRoom(room, { type: 'room-update', room });
       }
 
-      // -----------------------------------------
+      // ------------------------
       // UPDATE PLAYER STATS
-      // -----------------------------------------
-      if (type === "update-stats") {
+      // ------------------------
+      if (type === 'update-stats') {
         const { roomCode, userId, field, value } = msg;
+        const room = await Room.findOne({ roomCode });
+        if (!room) return;
 
-        try {
-          const room = await Room.findOne({ roomCode });
-          if (!room) return;
+        const player = room.players.find((p) => p.userId === userId);
+        if (!player) return;
 
-          const player = room.players.find((p) => p.userId === userId);
-          if (!player) return;
+        player[field] = value;
+        room.updatedAt = new Date();
+        await room.save();
 
-          // Only allow safe fields to be updated
-          if (["health", "energy", "poison", "other", "name"].includes(field)) {
-            player[field] = value;
-          }
-
-          room.updatedAt = new Date();
-          await room.save();
-
-          broadcastToRoom(room, { type: "room-update", room: room.toObject() });
-        } catch (err) {
-          console.error(err);
-          ws.send(JSON.stringify({ type: "error", message: err.message }));
-        }
+        broadcastToRoom(room, { type: 'room-update', room });
       }
     });
 
-    ws.on("close", () => {
-      console.log("Client disconnected");
-      // Do NOT remove players — persistence relies on them staying
+    ws.on('close', () => {
+      console.log('Client disconnected');
+      // Keep players in DB for persistence; rejoin will reconnect them
     });
   });
 
-  console.log("WebSocket server ready.");
+  console.log('WebSocket server ready.');
 }
 
 module.exports = setupWebSocket;

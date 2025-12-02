@@ -1,12 +1,11 @@
-// server.js
 const express = require('express');
 const http = require('http');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
-const { v4: uuidv4 } = require('uuid');
-const { MongoClient } = require('mongodb');
-const DBConfig = require('./dbConfig.json');
+const uuid = require('uuid');
+
+const { connectDB, getUsers } = require('./database');
 
 const app = express();
 const authCookieName = 'token';
@@ -18,49 +17,31 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- MongoDB Setup ---
-const url = `mongodb+srv://${DBConfig.userName}:${DBConfig.password}@${DBConfig.hostname}`;
-const client = new MongoClient(url, { useUnifiedTopology: true });
-
-let db, userCollection, scoreCollection;
-
+// --- Helper Functions ---
 async function findUser(field, value) {
   if (!value) return null;
+  const userCollection = getUsers();
   if (field === 'token') return userCollection.findOne({ token: value });
   return userCollection.findOne({ email: value });
 }
 
 async function createUser(email, password) {
+  const userCollection = getUsers();
   const passwordHash = await bcrypt.hash(password, 10);
-  const token = uuidv4();
+  const token = uuid.v4();
   const user = { email, password: passwordHash, token, createdAt: new Date() };
   await userCollection.insertOne(user);
   return user;
 }
 
 async function updateUser(user) {
-  const { _id, ...rest } = user; // prevent overwriting _id
-  await userCollection.updateOne({ _id }, { $set: rest });
-}
-
-async function addScore(score) {
-  if (!score || typeof score.score !== 'number' || !score.email) {
-    throw new Error('Invalid score object');
-  }
-  await scoreCollection.insertOne(score);
-}
-
-async function getHighScores() {
-  const cursor = scoreCollection
-    .find({ score: { $gt: 0, $lt: 900 } })
-    .sort({ score: -1 })
-    .limit(10);
-  return cursor.toArray();
+  const userCollection = getUsers();
+  await userCollection.updateOne({ email: user.email }, { $set: user });
 }
 
 function setAuthCookie(res, token) {
   res.cookie(authCookieName, token, {
-    maxAge: 1000 * 60 * 60 * 24 * 365, // 1 year
+    maxAge: 1000 * 60 * 60 * 24 * 365,
     httpOnly: true,
     secure: isProduction,
     sameSite: 'strict',
@@ -71,12 +52,8 @@ function setAuthCookie(res, token) {
 async function verifyAuth(req, res, next) {
   const token = req.cookies[authCookieName];
   const user = token ? await findUser('token', token) : null;
-  if (user) {
-    req.user = user;
-    next();
-  } else {
-    res.status(401).send({ msg: 'Unauthorized' });
-  }
+  if (user) next();
+  else res.status(401).send({ msg: 'Unauthorized' });
 }
 
 // --- API Routes ---
@@ -110,7 +87,7 @@ apiRouter.post('/auth/login', async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) return res.status(401).json({ msg: 'Unauthorized' });
 
-    user.token = uuidv4();
+    user.token = uuid.v4();
     await updateUser(user);
     setAuthCookie(res, user.token);
     res.json({ email: user.email });
@@ -149,28 +126,6 @@ apiRouter.get('/auth/status', async (req, res) => {
   }
 });
 
-// Scores
-apiRouter.get('/scores', verifyAuth, async (_req, res) => {
-  try {
-    const scores = await getHighScores();
-    res.send(scores);
-  } catch (err) {
-    console.error('❌ /scores error:', err);
-    res.status(500).send({ msg: 'Failed to fetch scores' });
-  }
-});
-
-apiRouter.post('/score', verifyAuth, async (req, res) => {
-  try {
-    await addScore(req.body);
-    const scores = await getHighScores();
-    res.send(scores);
-  } catch (err) {
-    console.error('❌ /score error:', err);
-    res.status(500).send({ msg: 'Failed to save score' });
-  }
-});
-
 // --- SPA fallback ---
 app.use((_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -179,22 +134,17 @@ app.use((_req, res) => {
 // --- Start Server ---
 async function startServer() {
   try {
-    await client.connect();
-    db = client.db('tabletoptracker');
-    userCollection = db.collection('users');
-    scoreCollection = db.collection('scores');
-    console.log('✅ Connected to MongoDB');
-
+    await connectDB();
     const server = http.createServer(app);
 
-    // Initialize WebSocket server
-    require('./websocket')(server);
+    require('./websocket')(server); // attach WebSocket server
 
     server.listen(port, () => console.log(`🚀 Listening on port ${port}`));
   } catch (err) {
-    console.error('❌ Failed to connect to MongoDB:', err);
+    console.error('❌ Failed to start server:', err);
     process.exit(1);
   }
 }
 
 startServer();
+
