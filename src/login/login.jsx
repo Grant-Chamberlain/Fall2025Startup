@@ -1,64 +1,66 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthState } from './authState';
-import { login, register, logout } from '../../service/auth';
+import { AuthState, login, register, logout } from '../services/auth';
 
 export function Login({ userName, authState, onAuthChange }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Login handler
+  // --- Handlers ---
   async function handleLogin() {
     if (!email.trim() || !password.trim()) {
-      alert('Please enter both email and password.');
+      setError('Please enter both email and password.');
       return;
     }
     setLoading(true);
+    setError('');
     try {
       const data = await login(email, password);
       onAuthChange(data.email, AuthState.Authenticated);
       navigate('/tracker');
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   }
 
-  // Registration handler
   async function handleCreateUser() {
     if (!email.trim() || !password.trim()) {
-      alert('Email and password are required.');
+      setError('Email and password are required.');
       return;
     }
     setLoading(true);
+    setError('');
     try {
       const data = await register(email, password);
       onAuthChange(data.email, AuthState.Authenticated);
       navigate('/tracker');
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   }
 
-  // Logout handler
   async function handleLogout() {
     setLoading(true);
+    setError('');
     try {
       await logout();
       onAuthChange('', AuthState.Unauthenticated);
       navigate('/');
     } catch (err) {
-      console.error('Logout failed', err);
+      setError('Logout failed: ' + err.message);
     } finally {
       setLoading(false);
     }
   }
 
+  // --- Render ---
   return (
     <main className="container-fluid bg-secondary text-center min-vh-100 d-flex flex-column justify-content-center align-items-center">
       <h1 className="mb-4">Welcome to Table Top Tracker!</h1>
@@ -80,10 +82,12 @@ export function Login({ userName, authState, onAuthChange }) {
           style={{ width: '320px' }}
           onSubmit={(e) => e.preventDefault()}
         >
+          {error && <div className="alert alert-danger mb-3">{error}</div>}
+
           <div className="mb-3">
             <input
               className="form-control"
-              type="text"
+              type="email"
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

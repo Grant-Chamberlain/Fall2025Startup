@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/Grant-Chamberlain/Fall2025Startup#readme",
   "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.1",
     "vite": "^7.1.9"
   },
   "dependencies": {
@@ -28,6 +29,7 @@
     "react-bootstrap": "^2.10.10",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.4",
+    "socket.io-client": "^4.8.1",
     "uuid": "^13.0.0",
     "ws": "^8.18.3"
   }

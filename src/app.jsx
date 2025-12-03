@@ -8,19 +8,18 @@ import { Join } from './join/join';
 import { Tracker } from './tracker/tracker';
 import { About } from './about/about';
 
-import { AuthState } from './login/authState';
-import { getAuthStatus } from '../service/auth'; // frontend wrapper
+import { AuthState, getAuthStatus } from './services/auth';
 
 export default function App() {
   const [userName, setUserName] = useState('');
   const [authState, setAuthState] = useState(AuthState.Unauthenticated);
-  const [loading, setLoading] = useState(true); // while checking session
+  const [loading, setLoading] = useState(true);
 
   const NotFound = () => (
-  <main className="container-fluid bg-secondary text-center">
-    404: Return to sender. Address unknown.
-  </main>
-);
+    <main className="container-fluid bg-secondary text-center">
+      404: Return to sender. Address unknown.
+    </main>
+  );
 
   // Check backend session on first load
   useEffect(() => {
@@ -44,9 +43,11 @@ export default function App() {
   }, []);
 
   if (loading) {
-    return <main className="container-fluid bg-secondary text-center min-vh-100 d-flex justify-content-center align-items-center">
-      <h2>Loading...</h2>
-    </main>;
+    return (
+      <main className="container-fluid bg-secondary text-center min-vh-100 d-flex justify-content-center align-items-center">
+        <h2>Loading...</h2>
+      </main>
+    );
   }
 
   return (
@@ -56,12 +57,10 @@ export default function App() {
           <nav className="navbar navbar-dark">
             <div className="navbar-brand">Table Top Tracker</div>
             <menu className="navbar-nav">
-              {/* Login link always visible */}
               <li className="nav-item">
                 <NavLink className="nav-link" to="/">Login</NavLink>
               </li>
 
-              {/* Conditional links based on auth */}
               {authState === AuthState.Authenticated && (
                 <>
                   <li className="nav-item">
@@ -81,16 +80,19 @@ export default function App() {
         </header>
 
         <Routes>
-          <Route path="/" element={
-            <Login
-              userName={userName}
-              authState={authState}
-              onAuthChange={(newUserName, newAuthState) => {
-                setUserName(newUserName);
-                setAuthState(newAuthState);
-              }}
-            />
-          } />
+          <Route
+            path="/"
+            element={
+              <Login
+                userName={userName}
+                authState={authState}
+                onAuthChange={(newUserName, newAuthState) => {
+                  setUserName(newUserName);
+                  setAuthState(newAuthState);
+                }}
+              />
+            }
+          />
           <Route path="/join" element={<Join authState={authState} />} />
           <Route path="/tracker" element={<Tracker authState={authState} />} />
           <Route path="/about" element={<About />} />
@@ -100,11 +102,15 @@ export default function App() {
         <footer className="bg-dark text-white-50 mt-auto">
           <div className="container-fluid d-flex justify-content-between">
             <span className="text-reset">Grant Chamberlain</span>
-            <a className="text-reset" href="https://github.com/Grant-Chamberlain/Fall2025Startup">Source</a>
+            <a
+              className="text-reset"
+              href="https://github.com/Grant-Chamberlain/Fall2025Startup"
+            >
+              Source
+            </a>
           </div>
         </footer>
       </div>
     </BrowserRouter>
   );
 }
-

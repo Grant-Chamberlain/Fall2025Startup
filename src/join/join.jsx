@@ -1,88 +1,115 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthState } from '../login/authState';
+import { AuthState } from '../services/auth';
 
 export function Join({ authState }) {
   const navigate = useNavigate();
+  const [roomCode, setRoomCode] = useState('');
+  const [username, setUsername] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
 
-  // Redirect if user is not authenticated
+  // Redirect if not authenticated
   useEffect(() => {
     if (authState !== AuthState.Authenticated) {
       navigate('/');
     }
   }, [authState, navigate]);
 
-  const [roomCode, setRoomCode] = useState('');
-  const [friends, setFriends] = useState([
-    { name: 'Alice', status: 'Online', joinable: true },
-    { name: 'Bob', status: 'Offline', joinable: false },
-    { name: 'Charlie', status: 'Away', joinable: true },
-  ]);
+  async function handleCreateRoom() {
+    const code = Math.random().toString(36).substring(2, 6).toUpperCase();
+    try {
+      const res = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ roomCode: code }),
+      });
+      if (!res.ok) throw new Error('Failed to create room');
 
-  function handleJoinRoom() {
-    if (!roomCode.trim()) return alert('Enter a valid room code.');
-    navigate('/tracker');
+      navigate(`/tracker?room=${encodeURIComponent(code)}&user=${encodeURIComponent(username)}&color=${encodeURIComponent(selectedColor)}`);
+    } catch (err) {
+      alert('Error creating room');
+      console.error(err);
+    }
   }
 
-  function handleJoinFriend(friend) {
-    if (!friend.joinable) return alert(`${friend.name} is not available.`);
-    navigate('/tracker');
+  async function handleJoinRoom() {
+    if (!roomCode.trim() || !username.trim() || !selectedColor) {
+      return alert('Enter a room code, username, and pick a color.');
+    }
+    try {
+      const res = await fetch(`/api/rooms/${roomCode.trim().toUpperCase()}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ playerName: username, color: selectedColor }),
+      });
+      if (!res.ok) throw new Error('Failed to join room');
+
+      navigate(`/tracker?room=${encodeURIComponent(roomCode.trim().toUpperCase())}&user=${encodeURIComponent(username)}&color=${encodeURIComponent(selectedColor)}`);
+    } catch (err) {
+      alert('Error joining room');
+      console.error(err);
+    }
   }
+
+  const colors = ['#FF5733', '#33FF57', '#3357FF', '#F1C40F', '#9B59B6', '#1ABC9C', '#E67E22', '#E74C3C'];
 
   return (
-    <main className="container-fluid bg-secondary text-center">
-      <div>
-        <label htmlFor="code">Room Code</label>
+    <main className="container-fluid bg-secondary text-center p-4">
+      {/* Username box */}
+      <div className="card bg-dark text-light shadow rounded p-3 mx-auto mb-4" style={{ maxWidth: '400px' }}>
+        <h5 className="mb-2">Enter Username</h5>
         <input
           type="text"
-          id="code"
-          className="form-control"
-          placeholder="Your Code Here"
+          className="form-control text-center"
+          placeholder="Your username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+      </div>
+
+      {/* Color picker box */}
+      <div className="card bg-dark text-light shadow rounded p-3 mx-auto mb-4" style={{ maxWidth: '400px' }}>
+        <h5 className="mb-2">Pick a Color</h5>
+        <div className="d-flex flex-wrap justify-content-center">
+          {colors.map((color) => (
+            <div
+              key={color}
+              onClick={() => setSelectedColor(color)}
+              style={{
+                backgroundColor: color,
+                width: '30px',
+                height: '30px',
+                margin: '5px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                border: selectedColor === color ? '3px solid white' : '1px solid #ccc',
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Existing Join/Start card */}
+      <div className="card bg-dark text-light shadow rounded p-4 mx-auto" style={{ maxWidth: '400px' }}>
+        <h3 className="mb-3">Join or Start a Room</h3>
+
+        <button className="btn btn-success w-100 mb-3" onClick={handleCreateRoom}>
+          Start New Room
+        </button>
+
+        <input
+          type="text"
+          className="form-control text-center mb-2"
+          placeholder="Enter room code"
           value={roomCode}
           onChange={(e) => setRoomCode(e.target.value)}
         />
-        <button className="btn btn-success mt-2" onClick={handleJoinRoom}>Join</button>
-      </div>
-
-      <div className="container mt-4 d-flex justify-content-center">
-        <div className="card bg-dark text-light shadow rounded" style={{ width: '400px' }}>
-          <div className="card-header text-center">Friends Online</div>
-          <div className="card-body p-0">
-            <table className="table table-dark table-hover table-striped table-bordered mb-0 text-center">
-              <thead>
-                <tr>
-                  <th>Friend</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {friends.map((friend, i) => (
-                  <tr key={i}>
-                    <td>{friend.name}</td>
-                    <td>
-                      <span className={`badge ${
-                        friend.status === 'Online' ? 'bg-success' :
-                        friend.status === 'Offline' ? 'bg-danger' : 'bg-warning text-dark'
-                      }`}>{friend.status}</span>
-                    </td>
-                    <td>
-                      <button
-                        className={`btn btn-sm ${friend.joinable ? 'btn-primary' : 'btn-secondary'}`}
-                        disabled={!friend.joinable}
-                        onClick={() => handleJoinFriend(friend)}
-                      >
-                        Join
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <button className="btn btn-primary w-100" onClick={handleJoinRoom}>
+          Join Room
+        </button>
       </div>
     </main>
   );
 }
-

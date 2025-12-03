@@ -1,6 +1,6 @@
 const WebSocket = require('ws');
 const crypto = require('crypto');
-const Room = require('./models/Room'); // Mongoose model
+const Room = require('./Room'); // Mongoose model
 
 const activeConnections = new Map(); // userId → ws
 
@@ -54,58 +54,71 @@ function setupWebSocket(server) {
       }
 
       // ------------------------
-      // JOIN ROOM
-      // ------------------------
-      if (type === 'join-room') {
-        const { roomCode, name, userId } = msg;
-        const room = await Room.findOne({ roomCode });
-        if (!room) {
-          ws.send(JSON.stringify({ type: 'error', message: 'Room not found' }));
-          return;
-        }
+// JOIN ROOM
+// ------------------------
+if (type === 'join-room') {
+  const { roomCode, name, userId, color } = msg;
+  const room = await Room.findOne({ roomCode });
+  if (!room) {
+    ws.send(JSON.stringify({ type: 'error', message: 'Room not found' }));
+    return;
+  }
 
-        const id = userId || crypto.randomUUID();
-        activeConnections.set(id, ws);
+  if (!color) {
+    ws.send(JSON.stringify({ type: 'error', message: 'Color is required to join a room' }));
+    return;
+  }
 
-        let player = room.players.find((p) => p.userId === id);
-        if (!player) {
-          player = {
-            userId: id,
-            name,
-            health: 40,
-            energy: 0,
-            poison: 0,
-            other: '',
-          };
-          room.players.push(player);
-        } else {
-          player.name = name; // update display name
-        }
+  const id = userId || crypto.randomUUID();
+  activeConnections.set(id, ws);
 
-        room.updatedAt = new Date();
-        await room.save();
+  let player = room.players.find((p) => p.userId === id);
+  if (!player) {
+    player = {
+      userId: id,
+      name,
+      color, // 👈 enforce color
+      health: 40,
+      energy: 0,
+      poison: 0,
+      other: '',
+    };
+    room.players.push(player);
+  } else {
+    player.name = name;
+    player.color = color; // update if changed
+  }
 
-        ws.send(JSON.stringify({ type: 'joined-room', roomCode, userId: id }));
+  room.updatedAt = new Date();
+  await room.save();
 
-        broadcastToRoom(room, { type: 'room-update', room });
-      }
+  ws.send(JSON.stringify({ type: 'joined-room', roomCode, userId: id }));
+  broadcastToRoom(room, { type: 'room-update', room });
+}
 
-      // ------------------------
-      // REJOIN ROOM
-      // ------------------------
-      if (type === 'rejoin-room') {
-        const { roomCode, userId } = msg;
-        const room = await Room.findOne({ roomCode });
-        if (!room) return;
+// ------------------------
+// REJOIN ROOM
+// ------------------------
+if (type === 'rejoin-room') {
+  const { roomCode, userId } = msg;
+  const room = await Room.findOne({ roomCode });
+  if (!room) {
+    ws.send(JSON.stringify({ type: 'error', message: 'Room not found' }));
+    return;
+  }
 
-        const player = room.players.find((p) => p.userId === userId);
-        if (!player) return;
+  const player = room.players.find((p) => p.userId === userId);
+  if (!player) {
+    ws.send(JSON.stringify({ type: 'error', message: 'Player not found' }));
+    return;
+  }
 
-        activeConnections.set(userId, ws);
+  // Reattach connection
+  activeConnections.set(userId, ws);
 
-        ws.send(JSON.stringify({ type: 'rejoined-room', room }));
-        broadcastToRoom(room, { type: 'room-update', room });
-      }
+  ws.send(JSON.stringify({ type: 'rejoined-room', room }));
+  broadcastToRoom(room, { type: 'room-update', room });
+}
 
       // ------------------------
       // UPDATE PLAYER STATS

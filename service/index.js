@@ -1,11 +1,14 @@
 const express = require('express');
 const http = require('http');
-const path = require('path');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const uuid = require('uuid');
+const mongoose = require('mongoose');
+const config = require('./dbConfig.json');
 
-const { connectDB, getUsers } = require('./database');
+const { connectDB, getUsers } = require('./database'); // native driver for users
+const websocket = require('./websocket');              // WebSocket setup
+const roomsRouter = require('./routes/rooms');         // Rooms routes
 
 const app = express();
 const authCookieName = 'token';
@@ -15,9 +18,8 @@ const isProduction = process.env.NODE_ENV === 'production';
 // --- Middleware ---
 app.use(express.json());
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
 
-// --- Helper Functions ---
+// --- Auth Helpers (native driver) ---
 async function findUser(field, value) {
   if (!value) return null;
   const userCollection = getUsers();
@@ -48,36 +50,25 @@ function setAuthCookie(res, token) {
   });
 }
 
-// --- Auth Middleware ---
-async function verifyAuth(req, res, next) {
-  const token = req.cookies[authCookieName];
-  const user = token ? await findUser('token', token) : null;
-  if (user) next();
-  else res.status(401).send({ msg: 'Unauthorized' });
-}
-
-// --- API Routes ---
+// --- API Router ---
 const apiRouter = express.Router();
 app.use('/api', apiRouter);
 
-// Create user
+// --- Auth Routes ---
 apiRouter.post('/auth/create', async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).send({ msg: 'Email and password required' });
-
     if (await findUser('email', email)) return res.status(409).send({ msg: 'Existing user' });
 
     const user = await createUser(email, password);
     setAuthCookie(res, user.token);
-    res.send({ email: user.email });
+    res.json({ email: user.email });
   } catch (err) {
-    console.error('❌ /auth/create error:', err);
     res.status(500).send({ type: err.name, message: err.message });
   }
 });
 
-// Login
 apiRouter.post('/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -92,12 +83,10 @@ apiRouter.post('/auth/login', async (req, res) => {
     setAuthCookie(res, user.token);
     res.json({ email: user.email });
   } catch (err) {
-    console.error('❌ /auth/login error:', err);
     res.status(500).json({ type: err.name, message: err.message });
   }
 });
 
-// Logout
 apiRouter.delete('/auth/logout', async (req, res) => {
   try {
     const token = req.cookies[authCookieName];
@@ -109,37 +98,55 @@ apiRouter.delete('/auth/logout', async (req, res) => {
     res.clearCookie(authCookieName);
     res.status(204).end();
   } catch (err) {
-    console.error('❌ /auth/logout error:', err);
     res.status(500).send({ type: err.name, message: err.message });
   }
 });
 
-// Auth status
 apiRouter.get('/auth/status', async (req, res) => {
   try {
     const token = req.cookies[authCookieName];
     const user = token ? await findUser('token', token) : null;
-    res.send(user ? { authenticated: true, email: user.email } : { authenticated: false });
+    res.json(user ? { authenticated: true, email: user.email } : { authenticated: false });
   } catch (err) {
-    console.error('❌ /auth/status error:', err);
     res.status(500).send({ type: err.name, message: err.message });
   }
 });
 
-// --- SPA fallback ---
-app.use((_req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// --- Rooms Routes ---
+apiRouter.use(roomsRouter);
 
 // --- Start Server ---
 async function startServer() {
   try {
+    // Connect native driver for auth
     await connectDB();
+
+    // Connect Mongoose for rooms
+    const uri = `mongodb+srv://${config.userName}:${config.password}@${config.hostname}/tabletoptracker?retryWrites=true&w=majority`;
+    await mongoose.connect(uri);
+    console.log("✅ Connected to MongoDB Atlas via Mongoose (rooms)");
+
+    // Start HTTP + WebSocket server
     const server = http.createServer(app);
+    websocket(server);
+    server.listen(port, () => {
+      console.log(`🚀 Backend listening on http://localhost:${port}`);
+    });
+    // ------------------------
+    // Cleanup job: delete rooms inactive > 1 hour
+    // ------------------------
+    setInterval(async () => {
+      try {
+        const cutoff = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
+        const result = await Room.deleteMany({ updatedAt: { $lt: cutoff } });
+        if (result.deletedCount > 0) {
+          console.log(`🧹 Cleaned up ${result.deletedCount} inactive rooms`);
+        }
+      } catch (err) {
+        console.error('Error cleaning up rooms:', err);
+      }
+    }, 10 * 60 * 1000); // run every 10 minutes
 
-    require('./websocket')(server); // attach WebSocket server
-
-    server.listen(port, () => console.log(`🚀 Listening on port ${port}`));
   } catch (err) {
     console.error('❌ Failed to start server:', err);
     process.exit(1);
@@ -147,4 +154,3 @@ async function startServer() {
 }
 
 startServer();
-

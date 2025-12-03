@@ -1,200 +1,204 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
-export function Tracker({ userName }) {
-  const socket = useRef(null);
+export function Tracker() {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const roomCode = queryParams.get('room');
+  const currentUser = queryParams.get('user');
+  const currentColor = queryParams.get('color'); // 👈 required color
 
   const [players, setPlayers] = useState([]);
-  const [roomCode, setRoomCode] = useState("");
-  const [gameRoom, setGameRoom] = useState("");
-  const [userId, setUserId] = useState(localStorage.getItem("userId") || null);
+  const [ws, setWs] = useState(null);
+  const [userId, setUserId] = useState(localStorage.getItem('userId'));
+  const [error, setError] = useState(null);
 
-  // -----------------------------------------------------
-  // CONNECT WEBSOCKET
-  // -----------------------------------------------------
   useEffect(() => {
-    socket.current = new WebSocket("ws://localhost:4000");
+    // Require color before joining
+    if (!currentColor) {
+      setError('You must select a color before joining a room.');
+      return;
+    }
 
-    socket.current.onopen = () => {
-      console.log("WS Connected");
+    const socket = new WebSocket('ws://localhost:4000'); // adjust to your backend URL
+    setWs(socket);
 
-      // If refreshing the page, attempt rejoin
-      if (userId && gameRoom) {
-        socket.current.send(
-          JSON.stringify({
-            type: "rejoin-room",
-            roomCode: gameRoom,
-            userId,
-          })
-        );
+    socket.onopen = () => {
+      console.log('✅ Connected to WebSocket server');
+
+      if (userId) {
+        // Rejoin with saved userId
+        socket.send(JSON.stringify({
+          type: 'rejoin-room',
+          roomCode,
+          userId,
+        }));
+      } else {
+        // First join with color
+        socket.send(JSON.stringify({
+          type: 'join-room',
+          roomCode,
+          name: currentUser,
+          color: currentColor, // 👈 send color
+        }));
       }
     };
 
-    socket.current.onmessage = (event) => {
+    socket.onmessage = (event) => {
       const msg = JSON.parse(event.data);
-      console.log("WS =>", msg);
 
-      switch (msg.type) {
-        case "room-created":
-          setGameRoom(msg.roomCode);
-          break;
+      if (msg.type === 'joined-room') {
+        setUserId(msg.userId);
+        localStorage.setItem('userId', msg.userId);
+      }
 
-        case "joined-room":
-          setGameRoom(msg.roomCode);
-          setUserId(msg.userId);
-          localStorage.setItem("userId", msg.userId);
-          break;
+      if (msg.type === 'room-update') {
+        setPlayers(msg.room.players || []);
+      }
 
-        case "rejoined-room":
-        case "room-update":
-          setPlayers(msg.room.players);
-          break;
+      if (msg.type === 'rejoined-room') {
+        setPlayers(msg.room.players || []);
+      }
 
-        case "error":
-          alert(msg.message);
-          break;
-
-        default:
-          break;
+      if (msg.type === 'error') {
+        setError(msg.message);
       }
     };
 
-    socket.current.onclose = () => console.log("WS Closed");
-    return () => socket.current.close();
-  }, [userId, gameRoom]);
+    socket.onclose = () => {
+      console.log('❌ Disconnected from WebSocket server');
+    };
 
-  // -----------------------------------------------------
-  // CREATE ROOM
-  // -----------------------------------------------------
-  function createRoom() {
-    if (!userName) return alert("Enter your name");
+    return () => {
+      socket.close();
+    };
+  }, [roomCode, currentUser, currentColor, userId]);
 
-    const code = Math.random().toString(36).substring(2, 6).toUpperCase();
-    setGameRoom(code);
+  // Send update-stats message
+  function updateStat(playerId, field, delta) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
-    socket.current.send(
-      JSON.stringify({
-        type: "create-room",
-        roomCode: code,
-      })
-    );
+    const player = players.find(p => p.userId === playerId);
+    if (!player) return;
+
+    const newValue = player[field] + delta;
+
+    ws.send(JSON.stringify({
+      type: 'update-stats',
+      roomCode,
+      userId: playerId,
+      field,
+      value: newValue,
+    }));
   }
 
-  // -----------------------------------------------------
-  // JOIN ROOM
-  // -----------------------------------------------------
-  function joinRoom() {
-    if (!userName) return alert("Enter your name");
-    if (!roomCode) return alert("Enter room code");
-
-    const code = roomCode.toUpperCase();
-
-    socket.current.send(
-      JSON.stringify({
-        type: "join-room",
-        roomCode: code,
-        userId,
-        name: userName,
-      })
-    );
-  }
-
-  // -----------------------------------------------------
-  // UPDATE A SINGLE PLAYER STAT
-  // -----------------------------------------------------
-  function handleInputChange(index, field, value) {
-    const updated = [...players];
-    updated[index] = { ...updated[index], [field]: value };
-    setPlayers(updated);
-
-    socket.current.send(
-      JSON.stringify({
-        type: "update-stats",
-        roomCode: gameRoom,
-        userId: updated[index].userId,
-        field,
-        value,
-      })
-    );
+  if (error) {
+    return <div className="alert alert-danger">{error}</div>;
   }
 
   return (
-    <main className="bg-secondary text-light min-vh-100 p-4">
-      <div className="container">
+    <main className="container-fluid bg-secondary text-center p-4">
+      <h2 className="mb-4">Room: {roomCode}</h2>
 
-        {!gameRoom && (
-          <div className="card bg-dark text-light p-3 mb-4 shadow">
-            <h3 className="text-center">Join or Create Room</h3>
-
-            <div className="d-flex gap-2">
-              <button className="btn btn-success w-50" onClick={createRoom}>
-                Create Room
-              </button>
-              <button className="btn btn-primary w-50" onClick={joinRoom}>
-                Join Room
-              </button>
-            </div>
-
-            <input
-              type="text"
-              className="form-control mt-2 text-center"
-              placeholder="Enter Room Code"
-              value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value)}
-            />
-          </div>
-        )}
-
-        {gameRoom && (
-          <div className="alert alert-info text-center">
-            <strong>Room Code:</strong> {gameRoom}
-          </div>
-        )}
-
-        <div className="row g-4 mb-4">
-          {players.map((player, i) => (
-            <div key={player.userId} className="col-12 col-md-6 col-lg-4">
-              <div className="card text-center shadow bg-dark text-light">
-
-                <div className="card-header p-2">
-                  <input
-                    type="text"
-                    className="form-control text-center fw-bold fs-4"
-                    value={player.name}
-                    onChange={(e) =>
-                      handleInputChange(i, "name", e.target.value)
-                    }
+      <div className="table-responsive">
+        <table className="table table-dark table-striped table-bordered align-middle">
+          <thead>
+            <tr>
+              <th>Color 🎨</th>
+              <th>Player</th>
+              <th>Health ❤️</th>
+              <th>Energy ⚡</th>
+              <th>Poison ☠️</th>
+              <th>Other</th>
+            </tr>
+          </thead>
+          <tbody>
+            {players.map((player) => (
+              <tr key={player.userId}>
+                <td>
+                  <div
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      backgroundColor: player.color,
+                      border: '2px solid #fff',
+                      margin: 'auto',
+                    }}
                   />
-                </div>
-
-                <img
-                  src="kalia.png"
-                  alt="Commander"
-                  style={{ width: "100%", height: "250px", objectFit: "cover" }}
-                />
-
-                <div className="card-body">
-                  <div className="row g-2">
-                    {["health", "energy", "poison", "other"].map((field) => (
-                      <div className="col" key={field}>
-                        <input
-                          type={field === "other" ? "text" : "number"}
-                          className="form-control text-center"
-                          placeholder={field.toUpperCase()}
-                          value={player[field]}
-                          onChange={(e) =>
-                            handleInputChange(i, field, e.target.value)
-                          }
-                        />
-                      </div>
-                    ))}
+                </td>
+                <td>{player.name}</td>
+                <td>
+                  {player.health}
+                  <div>
+                    <button
+                      className="btn btn-sm btn-danger me-1"
+                      onClick={() => updateStat(player.userId, 'health', -1)}
+                    >
+                      -
+                    </button>
+                    <button
+                      className="btn btn-sm btn-success"
+                      onClick={() => updateStat(player.userId, 'health', +1)}
+                    >
+                      +
+                    </button>
                   </div>
-                </div>
-
-              </div>
-            </div>
-          ))}
-        </div>
-
+                </td>
+                <td>
+                  {player.energy}
+                  <div>
+                    <button
+                      className="btn btn-sm btn-danger me-1"
+                      onClick={() => updateStat(player.userId, 'energy', -1)}
+                    >
+                      -
+                    </button>
+                    <button
+                      className="btn btn-sm btn-success"
+                      onClick={() => updateStat(player.userId, 'energy', +1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </td>
+                <td>
+                  {player.poison}
+                  <div>
+                    <button
+                      className="btn btn-sm btn-danger me-1"
+                      onClick={() => updateStat(player.userId, 'poison', -1)}
+                    >
+                      -
+                    </button>
+                    <button
+                      className="btn btn-sm btn-success"
+                      onClick={() => updateStat(player.userId, 'poison', +1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </td>
+                <td>{player.other}
+                  <div>
+                    <button
+                      className="btn btn-sm btn-danger me-1"
+                      onClick={() => updateStat(player.userId, 'poison', -1)}
+                    >
+                      -
+                    </button>
+                    <button
+                      className="btn btn-sm btn-success"
+                      onClick={() => updateStat(player.userId, 'poison', +1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </main>
   );
