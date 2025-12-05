@@ -7,17 +7,19 @@ const mongoose = require('mongoose');
 const config = require('./dbConfig.json');
 
 const { connectDB, getUsers } = require('./database'); // native driver for users
-const websocket = require('./websocket');              // WebSocket setup
-const roomsRouter = require('./routes/rooms');         // Rooms routes
+const { setupWebSocket } = require('./websocket');     // WebSocket setup - FIXED
+const { router } = require('./rooms');        // Rooms routes - FIXED
+const Room = require('./Room');                     // Mongoose Room model
 
 const app = express();
 const authCookieName = 'token';
-const port = process.env.PORT || 4000;
+const port = process.argv.length > 2 ? process.argv[2] : 4000;
 const isProduction = process.env.NODE_ENV === 'production';
 
 // --- Middleware ---
 app.use(express.json());
 app.use(cookieParser());
+app.use(express.static('public'));
 
 // --- Auth Helpers (native driver) ---
 async function findUser(field, value) {
@@ -113,7 +115,7 @@ apiRouter.get('/auth/status', async (req, res) => {
 });
 
 // --- Rooms Routes ---
-apiRouter.use(roomsRouter);
+apiRouter.use(router);
 
 // --- Start Server ---
 async function startServer() {
@@ -128,7 +130,7 @@ async function startServer() {
 
     // Start HTTP + WebSocket server
     const server = http.createServer(app);
-    websocket(server);
+    setupWebSocket(server);  // FIXED - was websocket(server)
     server.listen(port, () => {
       console.log(`🚀 Backend listening on http://localhost:${port}`);
     });

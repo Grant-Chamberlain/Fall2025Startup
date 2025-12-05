@@ -6,8 +6,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:4000', // your Express backend
+      '/api': 'http://localhost:4000',
+      '/ws': {
+        target: 'ws://localhost:4000', // your Express backend
         changeOrigin: true,
         secure: false,
       },

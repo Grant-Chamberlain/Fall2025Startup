@@ -1,5 +1,5 @@
 const express = require('express');
-const Room = require('../Room'); // import your Mongoose Room model
+const Room = require('./Room'); // import your Mongoose Room model
 const router = express.Router();
 
 // POST /api/rooms → create a new room
@@ -67,4 +67,4 @@ router.post('/rooms/:roomCode/join', async (req, res) => {
 
 
 
-module.exports = router;
+module.exports = { router };

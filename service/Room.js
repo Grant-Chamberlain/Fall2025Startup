@@ -9,6 +9,8 @@ const PlayerSchema = new mongoose.Schema({
   energy: { type: Number, default: 0 },
   poison: { type: Number, default: 0 },
   other: { type: String, default: "" },
+  damageFrom: { type: Map, of: Number, default: {} } // new field
+
 });
 
 // Define the Room schema
